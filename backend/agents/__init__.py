@@ -18,6 +18,7 @@ from .openai_agent import OpenAIAgent, create_openai_agent
 from .agent_factory import (
     AgentFactory,
     create_agent,
+    create_default_agent,
     create_claude_agent as factory_create_claude,
     create_openai_agent as factory_create_openai
 )
@@ -34,6 +35,7 @@ __all__ = [
     # Factory
     "AgentFactory",
     "create_agent",
+    "create_default_agent",
 
     # Convenience functions
     "create_claude_agent",

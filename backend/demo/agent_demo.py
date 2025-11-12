@@ -13,7 +13,7 @@ import logging
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from models import ChallengeResponse, TestCase, DifficultyLevel, AgentConfig
-from agents import AgentFactory, create_claude_agent, create_openai_agent
+from agents import AgentFactory, create_default_agent, create_claude_agent, create_openai_agent
 
 # Configure logging
 logging.basicConfig(
@@ -138,6 +138,28 @@ async def test_agent_with_challenge(agent, challenge):
         }
 
 
+async def demo_openai_agent():
+    """Demonstrate OpenAI agent solving challenges (DEFAULT)."""
+    logger.info("\n" + "="*60)
+    logger.info("OPENAI AGENT DEMONSTRATION (DEFAULT)")
+    logger.info("="*60 + "\n")
+
+    # Create OpenAI agent (this is the default)
+    agent = create_default_agent(
+        model_name="gpt-4-turbo-preview",
+        temperature=0.7,
+        max_iterations=3
+    )
+
+    logger.info(f"Created agent: {agent.get_model_info()}\n")
+
+    # Get sample challenges
+    challenges = create_sample_challenges()
+
+    # Test on first challenge
+    await test_agent_with_challenge(agent, challenges[0])
+
+
 async def demo_claude_agent():
     """Demonstrate Claude agent solving challenges."""
     logger.info("\n" + "="*60)
@@ -160,37 +182,15 @@ async def demo_claude_agent():
     await test_agent_with_challenge(agent, challenges[0])
 
 
-async def demo_openai_agent():
-    """Demonstrate OpenAI agent solving challenges."""
-    logger.info("\n" + "="*60)
-    logger.info("OPENAI AGENT DEMONSTRATION")
-    logger.info("="*60 + "\n")
-
-    # Create OpenAI agent
-    agent = create_openai_agent(
-        model_name="gpt-4-turbo-preview",
-        temperature=0.7,
-        max_iterations=3
-    )
-
-    logger.info(f"Created agent: {agent.get_model_info()}\n")
-
-    # Get sample challenges
-    challenges = create_sample_challenges()
-
-    # Test on first challenge
-    await test_agent_with_challenge(agent, challenges[0])
-
-
 async def demo_agent_comparison():
     """Compare multiple agents on the same challenge."""
     logger.info("\n" + "="*60)
     logger.info("AGENT COMPARISON")
     logger.info("="*60 + "\n")
 
-    # Create different agents
+    # Create different agents (OpenAI first as default)
+    openai_agent = create_openai_agent(name="GPT-4 Turbo (Default)")
     claude_agent = create_claude_agent(name="Claude Sonnet")
-    openai_agent = create_openai_agent(name="GPT-4 Turbo")
 
     # Get a challenge
     challenges = create_sample_challenges()
@@ -201,7 +201,7 @@ async def demo_agent_comparison():
     # Test both agents
     results = {}
 
-    for agent in [claude_agent, openai_agent]:
+    for agent in [openai_agent, claude_agent]:
         result = await test_agent_with_challenge(agent, challenge)
         results[agent.config.name] = result
 
@@ -233,16 +233,20 @@ async def demo_agent_factory():
     providers = AgentFactory.list_supported_providers()
     logger.info(f"Supported providers: {providers}\n")
 
+    # Create default agent (OpenAI)
+    default_agent = create_default_agent(temperature=0.5)
+    logger.info(f"Created default agent: {default_agent.get_model_info()}\n")
+
     # Create agents using factory
-    claude = AgentFactory.create_agent("claude", temperature=0.5)
     openai = AgentFactory.create_agent("openai", temperature=0.5)
+    claude = AgentFactory.create_agent("claude", temperature=0.5)
 
-    logger.info(f"Created Claude agent: {claude.get_model_info()}")
-    logger.info(f"Created OpenAI agent: {openai.get_model_info()}\n")
+    logger.info(f"Created OpenAI agent: {openai.get_model_info()}")
+    logger.info(f"Created Claude agent: {claude.get_model_info()}\n")
 
-    # Test with a simple challenge
+    # Test with a simple challenge (using default OpenAI agent)
     challenges = create_sample_challenges()
-    await test_agent_with_challenge(claude, challenges[1])
+    await test_agent_with_challenge(default_agent, challenges[1])
 
 
 async def main():
@@ -253,8 +257,8 @@ async def main():
 
     print("This demo will show how AI agents solve coding challenges.")
     print("Choose a demo to run:\n")
-    print("1. Claude Agent Demo")
-    print("2. OpenAI Agent Demo")
+    print("1. OpenAI Agent Demo (DEFAULT)")
+    print("2. Claude Agent Demo")
     print("3. Agent Comparison")
     print("4. Agent Factory Demo")
     print("5. Run All Demos")
@@ -263,16 +267,16 @@ async def main():
     choice = input("Enter your choice (0-5): ").strip()
 
     if choice == "1":
-        await demo_claude_agent()
-    elif choice == "2":
         await demo_openai_agent()
+    elif choice == "2":
+        await demo_claude_agent()
     elif choice == "3":
         await demo_agent_comparison()
     elif choice == "4":
         await demo_agent_factory()
     elif choice == "5":
-        await demo_claude_agent()
         await demo_openai_agent()
+        await demo_claude_agent()
         await demo_agent_comparison()
         await demo_agent_factory()
     elif choice == "0":

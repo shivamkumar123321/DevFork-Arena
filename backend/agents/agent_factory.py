@@ -170,10 +170,32 @@ class AgentFactory:
         """
         return list(AgentFactory.SUPPORTED_PROVIDERS.keys())
 
+    @staticmethod
+    def create_default_agent(**kwargs) -> OpenAIAgent:
+        """
+        Create a default agent (OpenAI GPT-4 Turbo).
+
+        Args:
+            **kwargs: Configuration parameters
+
+        Returns:
+            OpenAIAgent: Configured OpenAI agent
+        """
+        return AgentFactory.create_openai_agent(**kwargs)
+
 
 # Convenience functions at module level
-def create_agent(provider: str, **kwargs) -> BaseAgent:
-    """Create an agent using the factory."""
+def create_agent(provider: str = "openai", **kwargs) -> BaseAgent:
+    """
+    Create an agent using the factory.
+
+    Args:
+        provider: Provider name (defaults to 'openai')
+        **kwargs: Configuration parameters
+
+    Returns:
+        BaseAgent: Configured agent instance
+    """
     return AgentFactory.create_agent(provider, **kwargs)
 
 
@@ -185,3 +207,8 @@ def create_claude_agent(**kwargs) -> ClaudeAgent:
 def create_openai_agent(**kwargs) -> OpenAIAgent:
     """Create an OpenAI agent."""
     return AgentFactory.create_openai_agent(**kwargs)
+
+
+def create_default_agent(**kwargs) -> OpenAIAgent:
+    """Create a default agent (OpenAI GPT-4 Turbo)."""
+    return AgentFactory.create_default_agent(**kwargs)

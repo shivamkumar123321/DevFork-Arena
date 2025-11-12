@@ -7,10 +7,12 @@ Complete AI agent system for solving coding challenges autonomously using LangCh
 The AI Agent System enables autonomous solving of coding challenges through:
 
 - **Abstract Base Framework**: Extensible base class for all AI agents
-- **Multi-Model Support**: Claude (Anthropic) and GPT (OpenAI) implementations
+- **Multi-Model Support**: GPT (OpenAI) **[DEFAULT]** and Claude (Anthropic) implementations
 - **LangChain Integration**: Leverages LangChain for robust LLM interactions
 - **Iterative Problem Solving**: Automatic error analysis and solution refinement
 - **Safe Code Execution**: Sandboxed environment for testing solutions
+
+**Default Agent**: OpenAI GPT-4 Turbo is the default agent for maximum compatibility and performance.
 
 ## Architecture
 
@@ -49,7 +51,40 @@ class BaseAgent(ABC):
 - Iterative solution refinement
 - Performance tracking and metrics
 
-### 2. ClaudeAgent
+### 2. OpenAIAgent (DEFAULT)
+
+OpenAI GPT-powered agent implementation - **the default agent**.
+
+```python
+from agents import create_default_agent  # Uses OpenAI by default
+
+# Create default agent (OpenAI GPT-4 Turbo)
+agent = create_default_agent(
+    temperature=0.7,
+    max_tokens=4096,
+    max_iterations=3
+)
+
+# Or explicitly create OpenAI agent
+from agents import create_openai_agent
+agent = create_openai_agent(
+    model_name="gpt-4-turbo-preview",
+    temperature=0.7,
+    max_tokens=4096,
+    max_iterations=3
+)
+
+# Solve a challenge
+solution = await agent.solve_challenge(challenge)
+```
+
+**Supported Models:**
+- `gpt-4-turbo-preview` (latest GPT-4 Turbo) **[DEFAULT]**
+- `gpt-4` (standard GPT-4)
+- `gpt-4-32k` (extended context)
+- `gpt-3.5-turbo` (faster, economical)
+
+### 3. ClaudeAgent
 
 Anthropic Claude-powered agent implementation.
 
@@ -74,41 +109,19 @@ solution = await agent.solve_challenge(challenge)
 - `claude-3-sonnet-20240229` (balanced)
 - `claude-3-haiku-20240307` (fast, economical)
 
-### 3. OpenAIAgent
-
-OpenAI GPT-powered agent implementation.
-
-```python
-from agents import create_openai_agent
-
-# Create agent
-agent = create_openai_agent(
-    model_name="gpt-4-turbo-preview",
-    temperature=0.7,
-    max_tokens=4096,
-    max_iterations=3
-)
-
-# Solve a challenge
-solution = await agent.solve_challenge(challenge)
-```
-
-**Supported Models:**
-- `gpt-4-turbo-preview` (latest GPT-4 Turbo)
-- `gpt-4` (standard GPT-4)
-- `gpt-4-32k` (extended context)
-- `gpt-3.5-turbo` (faster, economical)
-
 ### 4. AgentFactory
 
 Factory pattern for creating agents dynamically.
 
 ```python
-from agents import AgentFactory
+from agents import AgentFactory, create_default_agent
+
+# Create default agent (OpenAI)
+default_agent = create_default_agent(temperature=0.5)
 
 # Create by provider name
+openai_agent = AgentFactory.create_agent("openai", temperature=0.5)  # Default
 claude_agent = AgentFactory.create_agent("claude", temperature=0.5)
-openai_agent = AgentFactory.create_agent("openai", temperature=0.5)
 
 # List supported providers
 providers = AgentFactory.list_supported_providers()
@@ -141,7 +154,7 @@ is_valid, error = executor.validate_syntax(code)
 ```python
 import asyncio
 from models import ChallengeResponse, TestCase, DifficultyLevel
-from agents import create_claude_agent
+from agents import create_default_agent  # Creates OpenAI agent by default
 
 async def solve_challenge():
     # Create a challenge
@@ -157,8 +170,8 @@ async def solve_challenge():
         tags=["array", "hash-table"]
     )
 
-    # Create agent
-    agent = create_claude_agent()
+    # Create default agent (OpenAI GPT-4 Turbo)
+    agent = create_default_agent()
 
     # Solve
     solution = await agent.solve_challenge(challenge)
@@ -175,20 +188,20 @@ asyncio.run(solve_challenge())
 
 ```python
 from models import AgentConfig
-from agents import ClaudeAgent
+from agents import OpenAIAgent
 
-# Custom configuration
+# Custom configuration for OpenAI (default provider)
 config = AgentConfig(
-    name="Custom Claude Solver",
-    model_provider="anthropic",
-    model_name="claude-3-5-sonnet-20241022",
+    name="Custom GPT-4 Solver",
+    model_provider="openai",
+    model_name="gpt-4-turbo-preview",
     temperature=0.5,
     max_tokens=8192,
     max_iterations=5,
     system_prompt="You are an expert competitive programmer..."
 )
 
-agent = ClaudeAgent(config)
+agent = OpenAIAgent(config)
 ```
 
 ### Agent Comparison
@@ -197,10 +210,10 @@ agent = ClaudeAgent(config)
 async def compare_agents():
     challenge = get_challenge()
 
-    # Create multiple agents
+    # Create multiple agents (OpenAI first as default)
     agents = [
+        create_openai_agent(name="GPT-4 Turbo (Default)"),
         create_claude_agent(name="Claude Sonnet"),
-        create_openai_agent(name="GPT-4 Turbo"),
     ]
 
     # Compare performance
@@ -218,18 +231,21 @@ async def compare_agents():
 ### Using the Factory
 
 ```python
-from agents import AgentFactory
+from agents import AgentFactory, create_default_agent
+
+# Use default agent (OpenAI)
+agent = create_default_agent()
 
 # Dynamic agent creation
 def create_agent_by_preference(preference):
     if preference == "fast":
-        return AgentFactory.create_agent("claude",
-            model_name="claude-3-haiku-20240307")
+        return AgentFactory.create_agent("openai",
+            model_name="gpt-3.5-turbo")
     elif preference == "powerful":
         return AgentFactory.create_agent("openai",
             model_name="gpt-4")
     else:
-        return AgentFactory.create_agent("claude")
+        return create_default_agent()  # OpenAI GPT-4 Turbo
 
 agent = create_agent_by_preference("powerful")
 ```
@@ -307,8 +323,8 @@ python demo/agent_demo.py
 ```
 
 The demo provides:
-1. Claude Agent Demo
-2. OpenAI Agent Demo
+1. OpenAI Agent Demo (DEFAULT)
+2. Claude Agent Demo
 3. Agent Comparison
 4. Agent Factory Demo
 
@@ -335,8 +351,9 @@ The system handles:
 ## Best Practices
 
 1. **Choose Appropriate Models**
-   - Use Sonnet/GPT-4 for complex challenges
-   - Use Haiku/GPT-3.5 for simple/fast solutions
+   - Use GPT-4 Turbo (default) for most challenges
+   - Use GPT-4 or Claude Sonnet for complex challenges
+   - Use GPT-3.5 Turbo or Claude Haiku for simple/fast solutions
 
 2. **Configure Temperature**
    - Lower (0.3-0.5) for deterministic solutions
