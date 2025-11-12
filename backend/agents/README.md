@@ -180,6 +180,45 @@ for entry in results.leaderboard:
 - **Result Tracking**: Maintains leaderboards and rankings
 - **Resource Management**: Automatic cleanup and caching
 
+### 7. PromptTemplates (NEW)
+
+Specialized prompt templates for enhanced agent performance.
+
+```python
+from agents import PromptBuilder, format_challenge_prompt
+
+# Build challenge prompt
+prompt = PromptBuilder.build_challenge_prompt(
+    title="Two Sum",
+    difficulty="easy",
+    description="Find two numbers that sum to target",
+    test_cases=[
+        {"input": "[2,7,11,15], 9", "expected_output": "[0,1]"}
+    ],
+    constraints="2 <= nums.length <= 10^4"
+)
+
+# Build iteration prompt after failure
+iteration_prompt = PromptBuilder.build_iteration_prompt(
+    title="Two Sum",
+    previous_code=failed_code,
+    error_message="IndexError: list index out of range",
+    failed_tests=[
+        {"input": "[3,3], 6", "expected": "[0,1]", "actual": "Error"}
+    ]
+)
+
+# Quick prompt formatting
+prompt = format_challenge_prompt(title="...", description="...")
+```
+
+**Available Templates:**
+- **Challenge Solving**: Initial solution generation
+- **Iteration**: Failed attempt improvement
+- **Detailed Analysis**: Complex debugging
+- **Optimization**: Performance improvement
+- **Error Recovery**: Syntax/runtime error fixes
+
 ## Usage Examples
 
 ### Basic Usage

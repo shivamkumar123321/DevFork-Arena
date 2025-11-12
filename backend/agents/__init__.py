@@ -24,6 +24,15 @@ from .agent_factory import (
 )
 from .code_executor import CodeExecutor, executor
 from .agent_manager import AgentManager, AgentExecutionError
+from .prompts import (
+    PromptTemplates,
+    PromptBuilder,
+    format_challenge_prompt,
+    format_iteration_prompt,
+    format_analysis_prompt,
+    format_optimization_prompt,
+    format_error_recovery_prompt
+)
 
 __all__ = [
     # Base class
@@ -49,6 +58,15 @@ __all__ = [
     # Agent management and orchestration
     "AgentManager",
     "AgentExecutionError",
+
+    # Prompt templates
+    "PromptTemplates",
+    "PromptBuilder",
+    "format_challenge_prompt",
+    "format_iteration_prompt",
+    "format_analysis_prompt",
+    "format_optimization_prompt",
+    "format_error_recovery_prompt",
 ]
 
 __version__ = "1.0.0"
