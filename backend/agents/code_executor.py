@@ -357,3 +357,220 @@ class CodeExecutor:
 
 # Global executor instance
 executor = CodeExecutor(timeout=5)
+
+
+class MockCodeExecutor:
+    """
+    Mock code executor for testing and development.
+
+    This executor simulates code execution without actually running code.
+    Useful for testing agent logic without the overhead of real execution
+    or when Docker sandboxing is not yet implemented.
+
+    The mock executor returns randomized or configurable results.
+    """
+
+    def __init__(
+        self,
+        timeout: int = 5,
+        success_rate: float = 0.7,
+        random_seed: Optional[int] = None
+    ):
+        """
+        Initialize the mock code executor.
+
+        Args:
+            timeout: Simulated timeout in seconds (not enforced)
+            success_rate: Probability of tests passing (0.0 to 1.0)
+            random_seed: Optional seed for reproducible results
+        """
+        self.timeout = timeout
+        self.success_rate = success_rate
+
+        import random
+        if random_seed is not None:
+            random.seed(random_seed)
+        self.random = random
+
+    def execute_code(
+        self,
+        code: str,
+        test_input: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Simulate code execution.
+
+        Args:
+            code: Python code to execute (not actually run)
+            test_input: Optional input (ignored)
+
+        Returns:
+            Dict containing simulated execution results
+        """
+        logger.info("MockCodeExecutor: Simulating code execution")
+
+        # Simulate execution time
+        import time
+        execution_time = self.random.uniform(0.1, 2.0)
+        time.sleep(min(execution_time, 0.5))  # Actually sleep a bit for realism
+
+        # Check for obvious syntax errors
+        try:
+            compile(code, '<string>', 'exec')
+            has_syntax_error = False
+        except SyntaxError as e:
+            has_syntax_error = True
+            syntax_error = str(e)
+
+        if has_syntax_error:
+            return {
+                "success": False,
+                "output": "",
+                "error": f"Syntax Error: {syntax_error}",
+                "execution_time": execution_time
+            }
+
+        # Simulate random success/failure
+        success = self.random.random() < self.success_rate
+
+        if success:
+            return {
+                "success": True,
+                "output": "[Simulated output]",
+                "execution_time": execution_time
+            }
+        else:
+            errors = [
+                "IndexError: list index out of range",
+                "KeyError: 'key' not found",
+                "ValueError: invalid literal for int()",
+                "TypeError: unsupported operand type(s)",
+                "ZeroDivisionError: division by zero"
+            ]
+            return {
+                "success": False,
+                "output": "",
+                "error": self.random.choice(errors),
+                "execution_time": execution_time
+            }
+
+    def run_test_cases(
+        self,
+        code: str,
+        test_cases: List[TestCase],
+        function_name: Optional[str] = None
+    ) -> TestResult:
+        """
+        Simulate running test cases against code.
+
+        Args:
+            code: Python code (not actually run)
+            test_cases: List of test cases
+            function_name: Function name (ignored)
+
+        Returns:
+            TestResult: Simulated test results
+        """
+        logger.info(f"MockCodeExecutor: Simulating {len(test_cases)} test cases")
+
+        if not test_cases:
+            return TestResult(
+                passed=False,
+                total_tests=0,
+                passed_tests=0,
+                failed_tests=[{"error": "No test cases provided"}],
+                error_message="No test cases to run"
+            )
+
+        # Check syntax first
+        try:
+            compile(code, '<string>', 'exec')
+        except SyntaxError as e:
+            return TestResult(
+                passed=False,
+                total_tests=len(test_cases),
+                passed_tests=0,
+                failed_tests=[{"error": f"Syntax Error: {str(e)}"}],
+                error_message=f"Syntax Error: {str(e)}"
+            )
+
+        total_tests = len(test_cases)
+        passed_tests = 0
+        failed_tests = []
+        total_time = 0.0
+
+        # Simulate each test case
+        for i, test_case in enumerate(test_cases):
+            execution_time = self.random.uniform(0.05, 0.5)
+            total_time += execution_time
+
+            # Randomly determine if test passes
+            if self.random.random() < self.success_rate:
+                passed_tests += 1
+            else:
+                # Generate a simulated failure
+                failure_types = [
+                    {
+                        "test_number": i + 1,
+                        "input": test_case.input,
+                        "expected": test_case.expected_output,
+                        "actual": "[Wrong output]",
+                        "error": "Output mismatch"
+                    },
+                    {
+                        "test_number": i + 1,
+                        "input": test_case.input,
+                        "error": "Runtime error during test execution"
+                    }
+                ]
+                failed_tests.append(self.random.choice(failure_types))
+
+        # Determine overall pass/fail
+        passed = (passed_tests == total_tests)
+
+        error_message = None
+        if not passed:
+            error_message = f"{len(failed_tests)} test(s) failed"
+
+        return TestResult(
+            passed=passed,
+            total_tests=total_tests,
+            passed_tests=passed_tests,
+            failed_tests=failed_tests,
+            error_message=error_message,
+            execution_time=total_time
+        )
+
+    def validate_syntax(self, code: str) -> tuple[bool, Optional[str]]:
+        """
+        Validate Python code syntax (actually validates).
+
+        Args:
+            code: Python code to validate
+
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        try:
+            compile(code, '<string>', 'exec')
+            return True, None
+        except SyntaxError as e:
+            return False, f"Syntax Error at line {e.lineno}: {e.msg}"
+        except Exception as e:
+            return False, f"Validation error: {str(e)}"
+
+    def set_success_rate(self, rate: float) -> None:
+        """
+        Update the success rate for simulated executions.
+
+        Args:
+            rate: New success rate (0.0 to 1.0)
+        """
+        if not 0.0 <= rate <= 1.0:
+            raise ValueError("Success rate must be between 0.0 and 1.0")
+        self.success_rate = rate
+        logger.info(f"MockCodeExecutor: Success rate set to {rate}")
+
+
+# Global mock executor instance
+mock_executor = MockCodeExecutor(timeout=5, success_rate=0.75)

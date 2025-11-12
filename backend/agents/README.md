@@ -147,6 +147,45 @@ result = executor.run_test_cases(
 is_valid, error = executor.validate_syntax(code)
 ```
 
+### 5.1. MockCodeExecutor (NEW)
+
+Mock executor for testing without actual code execution - simulates results with configurable randomness.
+
+```python
+from agents import MockCodeExecutor, mock_executor
+
+# Create mock executor with 75% success rate
+mock_exec = MockCodeExecutor(
+    success_rate=0.75,
+    random_seed=42  # For reproducible results
+)
+
+# Simulate test execution
+result = mock_exec.run_test_cases(
+    code=solution_code,
+    test_cases=challenge.test_cases
+)
+
+# Adjust success rate dynamically
+mock_exec.set_success_rate(0.9)
+
+# Use global instance
+result = mock_executor.run_test_cases(code, tests)
+```
+
+**Use Cases:**
+- **Development**: Test agent logic without execution overhead
+- **Testing**: Reproducible results with random seed
+- **Prototyping**: Work without Docker sandboxing
+- **Performance**: Fast simulations for benchmarking
+
+**Features:**
+- Configurable success rate (0.0 to 1.0)
+- Random seed for reproducibility
+- Realistic error simulation (IndexError, TypeError, etc.)
+- Syntax validation (actually works)
+- Simulated execution times
+
 ### 6. AgentManager (NEW)
 
 Orchestrates competitions between multiple agents, manages submissions, and handles database persistence.

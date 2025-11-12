@@ -22,7 +22,7 @@ from .agent_factory import (
     create_claude_agent as factory_create_claude,
     create_openai_agent as factory_create_openai
 )
-from .code_executor import CodeExecutor, executor
+from .code_executor import CodeExecutor, executor, MockCodeExecutor, mock_executor
 from .agent_manager import AgentManager, AgentExecutionError
 from .prompts import (
     PromptTemplates,
@@ -54,6 +54,8 @@ __all__ = [
     # Code execution
     "CodeExecutor",
     "executor",
+    "MockCodeExecutor",
+    "mock_executor",
 
     # Agent management and orchestration
     "AgentManager",
