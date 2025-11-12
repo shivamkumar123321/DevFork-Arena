@@ -33,6 +33,14 @@ from .prompts import (
     format_optimization_prompt,
     format_error_recovery_prompt
 )
+from .test_agents import (
+    AlwaysPassAgent,
+    AlwaysFailAgent,
+    TimeoutAgent,
+    RandomAgent,
+    SlowAgent,
+    create_test_agent
+)
 
 __all__ = [
     # Base class
@@ -69,6 +77,14 @@ __all__ = [
     "format_analysis_prompt",
     "format_optimization_prompt",
     "format_error_recovery_prompt",
+
+    # Test agents
+    "AlwaysPassAgent",
+    "AlwaysFailAgent",
+    "TimeoutAgent",
+    "RandomAgent",
+    "SlowAgent",
+    "create_test_agent",
 ]
 
 __version__ = "1.0.0"
