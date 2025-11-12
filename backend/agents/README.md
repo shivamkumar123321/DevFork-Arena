@@ -147,6 +147,39 @@ result = executor.run_test_cases(
 is_valid, error = executor.validate_syntax(code)
 ```
 
+### 6. AgentManager (NEW)
+
+Orchestrates competitions between multiple agents, manages submissions, and handles database persistence.
+
+```python
+from agents import AgentManager
+from uuid import uuid4
+
+# Create manager
+manager = AgentManager(database=db)
+
+# Run a competition
+competition_id = uuid4()
+results = await manager.run_competition(
+    competition_id=competition_id,
+    challenge=challenge,
+    agent_ids=[agent1_id, agent2_id, agent3_id],
+    timeout_per_agent=300
+)
+
+# View results
+print(f"Winner: {results.winner}")
+for entry in results.leaderboard:
+    print(f"#{entry['rank']}: Score {entry['score']}")
+```
+
+**Key Features:**
+- **Concurrent Execution**: Runs multiple agents in parallel
+- **Database Integration**: Persists agents, competitions, and submissions
+- **Timeout Management**: Handles agent timeouts gracefully
+- **Result Tracking**: Maintains leaderboards and rankings
+- **Resource Management**: Automatic cleanup and caching
+
 ## Usage Examples
 
 ### Basic Usage
@@ -250,6 +283,81 @@ def create_agent_by_preference(preference):
 agent = create_agent_by_preference("powerful")
 ```
 
+### Running Competitions
+
+```python
+import asyncio
+from uuid import uuid4
+from agents import AgentManager
+from models import AgentRecord, ChallengeResponse
+
+async def run_agent_competition():
+    # Create manager
+    manager = AgentManager(database=db)
+
+    # Define competition
+    competition_id = uuid4()
+    challenge = get_challenge()  # Your challenge
+    agent_ids = [agent1_id, agent2_id, agent3_id]
+
+    # Run competition
+    results = await manager.run_competition(
+        competition_id=competition_id,
+        challenge=challenge,
+        agent_ids=agent_ids,
+        timeout_per_agent=300  # 5 minutes per agent
+    )
+
+    # Display results
+    print(f"Competition Duration: {results.total_duration:.2f}s")
+    print(f"Winner: {results.winner}")
+
+    print("\nLeaderboard:")
+    for entry in results.leaderboard:
+        print(
+            f"#{entry['rank']}: Agent {entry['agent_id']} - "
+            f"Score: {entry['score']}, "
+            f"Status: {entry['status']}, "
+            f"Time: {entry['execution_time']:.2f}s"
+        )
+
+    # Access individual submissions
+    for submission in results.submissions:
+        if submission.status.value == "passed":
+            print(f"\nAgent {submission.agent_id} solution:")
+            print(submission.code)
+
+asyncio.run(run_agent_competition())
+```
+
+### Database Integration
+
+```python
+from agents import AgentManager
+from database import db
+
+# Create manager with database
+manager = AgentManager(database=db)
+
+# Load agent from database
+agent_id = uuid4()
+agent = await manager.load_agent_from_db(agent_id)
+
+# Execute with automatic submission tracking
+submission = await manager.execute_agent(
+    agent_id=agent_id,
+    challenge_id="challenge-001",
+    competition_id=competition_id,
+    challenge=challenge,
+    timeout_seconds=300
+)
+
+# Submission automatically saved to database
+print(f"Submission ID: {submission.id}")
+print(f"Status: {submission.status.value}")
+print(f"Score: {submission.score}")
+```
+
 ## Configuration
 
 ### Environment Variables
@@ -259,7 +367,29 @@ Required environment variables in `.env`:
 ```env
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
 OPENAI_API_KEY=your_openai_api_key_here
+TIGERDATA_CONNECTION_STRING=postgresql://user:pass@host:port/database
 ```
+
+### Database Schema
+
+The system uses TigerData Postgres with the following tables:
+
+- **agents**: Store agent configurations
+- **challenges**: Challenge definitions and test cases
+- **competitions**: Competition records
+- **competition_agents**: Many-to-many relationship for participants
+- **submissions**: Code submissions and results
+- **agent_stats**: Performance statistics
+
+Initialize the database with:
+
+```bash
+psql -h your_host -U your_user -d your_database -f backend/schema.sql
+```
+
+Key views:
+- `agent_leaderboard`: Ranked agents by total score
+- `recent_competitions`: Latest competition results
 
 ### Agent Configuration Options
 
@@ -315,7 +445,9 @@ Once all tests pass, the final solution is returned with performance metrics.
 
 ## Testing
 
-Run the demo script to test the agent system:
+### Agent System Demo
+
+Test individual agents and basic functionality:
 
 ```bash
 cd backend
@@ -327,6 +459,21 @@ The demo provides:
 2. Claude Agent Demo
 3. Agent Comparison
 4. Agent Factory Demo
+
+### Competition Demo
+
+Test the AgentManager and competition orchestration:
+
+```bash
+cd backend
+python demo/competition_demo.py
+```
+
+The competition demo showcases:
+1. Basic Competition (Multiple Agents)
+2. Single Agent Execution
+3. Competition with Timeout Handling
+4. Manager Statistics & Monitoring
 
 ## Performance Metrics
 

@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
+from uuid import UUID, uuid4
 
 
 class DifficultyLevel(str, Enum):
@@ -121,3 +122,124 @@ class AgentPerformance(BaseModel):
     average_attempts: float = Field(0.0, description="Average attempts per challenge")
     average_time: float = Field(0.0, description="Average time per challenge in seconds")
     total_score: int = Field(0, description="Total score accumulated")
+
+
+class SubmissionStatus(str, Enum):
+    """Submission status"""
+    PENDING = "pending"
+    RUNNING = "running"
+    PASSED = "passed"
+    FAILED = "failed"
+    TIMEOUT = "timeout"
+    ERROR = "error"
+
+
+class CompetitionStatus(str, Enum):
+    """Competition status"""
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    CANCELLED = "cancelled"
+
+
+class AgentRecord(BaseModel):
+    """Agent record in database"""
+    id: UUID = Field(default_factory=uuid4, description="Agent unique identifier")
+    name: str = Field(..., description="Agent name")
+    model_provider: str = Field(..., description="Model provider (openai, anthropic)")
+    model_name: str = Field(..., description="Specific model name")
+    temperature: float = Field(0.7, description="Model temperature")
+    max_tokens: int = Field(4096, description="Maximum tokens")
+    max_iterations: int = Field(3, description="Maximum solution attempts")
+    system_prompt: Optional[str] = Field(None, description="Custom system prompt")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    is_active: bool = Field(True, description="Whether agent is active")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "name": "GPT-4 Solver",
+                "model_provider": "openai",
+                "model_name": "gpt-4-turbo-preview",
+                "temperature": 0.7,
+                "max_tokens": 4096,
+                "max_iterations": 3
+            }
+        }
+
+
+class SubmissionResponse(BaseModel):
+    """Submission response"""
+    id: UUID = Field(default_factory=uuid4, description="Submission unique identifier")
+    competition_id: UUID = Field(..., description="Competition identifier")
+    agent_id: UUID = Field(..., description="Agent identifier")
+    challenge_id: str = Field(..., description="Challenge identifier")
+    code: str = Field(..., description="Submitted code")
+    status: SubmissionStatus = Field(..., description="Submission status")
+    score: int = Field(0, description="Score achieved")
+    tests_passed: int = Field(0, description="Number of tests passed")
+    total_tests: int = Field(0, description="Total number of tests")
+    execution_time: Optional[float] = Field(None, description="Execution time in seconds")
+    error_message: Optional[str] = Field(None, description="Error message if any")
+    attempts: int = Field(0, description="Number of attempts made")
+    submitted_at: datetime = Field(default_factory=datetime.utcnow, description="Submission timestamp")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "competition_id": "550e8400-e29b-41d4-a716-446655440000",
+                "agent_id": "550e8400-e29b-41d4-a716-446655440001",
+                "challenge_id": "challenge-001",
+                "code": "def solution(nums, target):\n    ...",
+                "status": "passed",
+                "score": 100,
+                "tests_passed": 5,
+                "total_tests": 5
+            }
+        }
+
+
+class CompetitionResponse(BaseModel):
+    """Competition response"""
+    id: UUID = Field(default_factory=uuid4, description="Competition unique identifier")
+    challenge_id: str = Field(..., description="Challenge identifier")
+    agent_ids: List[UUID] = Field(..., description="List of competing agent IDs")
+    status: CompetitionStatus = Field(..., description="Competition status")
+    started_at: Optional[datetime] = Field(None, description="Start timestamp")
+    completed_at: Optional[datetime] = Field(None, description="Completion timestamp")
+    created_at: datetime = Field(default_factory=datetime.utcnow, description="Creation timestamp")
+    timeout_seconds: int = Field(300, description="Timeout in seconds per agent")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "challenge_id": "challenge-001",
+                "agent_ids": [
+                    "550e8400-e29b-41d4-a716-446655440001",
+                    "550e8400-e29b-41d4-a716-446655440002"
+                ],
+                "status": "pending",
+                "timeout_seconds": 300
+            }
+        }
+
+
+class CompetitionResults(BaseModel):
+    """Competition results"""
+    competition_id: UUID = Field(..., description="Competition identifier")
+    challenge: ChallengeResponse = Field(..., description="Challenge details")
+    submissions: List[SubmissionResponse] = Field(..., description="All submissions")
+    winner: Optional[UUID] = Field(None, description="Winning agent ID")
+    leaderboard: List[Dict[str, Any]] = Field(default_factory=list, description="Ranked results")
+    started_at: datetime = Field(..., description="Start timestamp")
+    completed_at: datetime = Field(..., description="Completion timestamp")
+    total_duration: float = Field(..., description="Total duration in seconds")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "competition_id": "550e8400-e29b-41d4-a716-446655440000",
+                "winner": "550e8400-e29b-41d4-a716-446655440001",
+                "total_duration": 45.2
+            }
+        }

@@ -23,6 +23,7 @@ from .agent_factory import (
     create_openai_agent as factory_create_openai
 )
 from .code_executor import CodeExecutor, executor
+from .agent_manager import AgentManager, AgentExecutionError
 
 __all__ = [
     # Base class
@@ -44,6 +45,10 @@ __all__ = [
     # Code execution
     "CodeExecutor",
     "executor",
+
+    # Agent management and orchestration
+    "AgentManager",
+    "AgentExecutionError",
 ]
 
 __version__ = "1.0.0"
