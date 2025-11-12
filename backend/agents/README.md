@@ -626,6 +626,34 @@ Once all tests pass, the final solution is returned with performance metrics.
 
 ## Testing
 
+### API Testing (NEW)
+
+Test the REST API endpoints:
+
+```bash
+# Start the API server
+cd backend
+python main.py
+
+# In another terminal, run the API test
+python test_api.py --full
+```
+
+The API test demonstrates:
+1. Health checks
+2. Creating competitions
+3. **Starting competitions (POST /{competition_id}/start)** ⭐
+4. Monitoring competition status
+5. Retrieving results and leaderboards
+
+**Key Endpoint**: `POST /api/competitions/{competition_id}/start`
+- Starts a competition with all agents competing
+- Runs asynchronously in background
+- Returns immediately with tracking info
+- See `backend/API_DOCUMENTATION.md` for complete API reference
+
+**Interactive API Docs**: http://localhost:8000/docs (Swagger UI)
+
 ### Agent System Demo
 
 Test individual agents and basic functionality:
