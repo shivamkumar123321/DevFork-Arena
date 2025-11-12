@@ -17,13 +17,28 @@ The AI Agent System enables autonomous solving of coding challenges through:
 ## Architecture
 
 ```
-agents/
-├── base_agent.py          # Abstract base class defining agent interface
-├── claude_agent.py        # Claude/Anthropic implementation
-├── openai_agent.py        # OpenAI/GPT implementation
-├── agent_factory.py       # Factory pattern for agent creation
-├── code_executor.py       # Safe code execution and testing
-└── __init__.py           # Module exports
+backend/
+├── agents/                     # AI agent implementations
+│   ├── base_agent.py          # Abstract base class defining agent interface
+│   ├── claude_agent.py        # Claude/Anthropic implementation
+│   ├── openai_agent.py        # OpenAI/GPT implementation
+│   ├── agent_factory.py       # Factory pattern for agent creation
+│   ├── agent_manager.py       # Competition orchestration and execution
+│   ├── code_executor.py       # Safe code execution and testing (+ Mock)
+│   ├── prompts.py             # Specialized prompt templates
+│   └── __init__.py            # Module exports
+│
+├── services/                   # High-level business logic services
+│   ├── competition_service.py # Competition lifecycle orchestration
+│   └── __init__.py            # Module exports
+│
+├── models.py                   # Data models and schemas
+├── schema.sql                  # TigerData Postgres database schema
+└── demo/                       # Demo scripts
+    ├── agent_demo.py          # Basic agent testing
+    ├── competition_demo.py    # AgentManager testing
+    ├── competition_service_demo.py  # CompetitionService testing
+    └── mock_executor_demo.py  # MockCodeExecutor testing
 ```
 
 ## Core Components
@@ -219,7 +234,59 @@ for entry in results.leaderboard:
 - **Result Tracking**: Maintains leaderboards and rankings
 - **Resource Management**: Automatic cleanup and caching
 
-### 7. PromptTemplates (NEW)
+### 7. Competition Service (NEW)
+
+High-level service for orchestrating the complete competition lifecycle.
+
+```python
+from services import CompetitionService, create_competition_service
+
+# Create service
+service = create_competition_service(database=db)
+
+# Create a competition
+competition = await service.create_competition(
+    challenge_id="challenge-001",
+    agent_ids=[agent1_id, agent2_id, agent3_id],
+    name="Two Sum Challenge"
+)
+
+# Run competition (handles all orchestration automatically)
+results = await service.run_competition(
+    competition_id=competition.id,
+    timeout_per_agent=300
+)
+
+# Service automatically:
+# - Updates status (pending → running → completed)
+# - Executes agents concurrently
+# - Determines winner
+# - Persists to database
+# - Handles errors and timeouts
+
+print(f"Winner: {results.winner}")
+for entry in results.leaderboard:
+    print(f"#{entry['rank']}: Score {entry['score']}")
+```
+
+**Key Features:**
+- **Status Management**: Automatic status transitions throughout competition lifecycle
+- **Database Integration**: Persists competitions, submissions, and results
+- **Error Handling**: Graceful handling of failures and timeouts
+- **High-level API**: Simple interface wrapping AgentManager complexity
+- **Monitoring**: Real-time status checking and statistics
+
+**Competition Flow:**
+1. Fetch competition details from database
+2. Update status to "running"
+3. Load all participating agents
+4. Execute agents concurrently on challenge
+5. Collect all submissions
+6. Determine winner (highest score, fastest time)
+7. Update competition with winner
+8. Set status to "completed"
+
+### 8. PromptTemplates
 
 Specialized prompt templates for enhanced agent performance.
 
@@ -436,6 +503,42 @@ print(f"Status: {submission.status.value}")
 print(f"Score: {submission.score}")
 ```
 
+### Using Competition Service (High-Level)
+
+```python
+from services import create_competition_service
+from database import db
+
+# Create service (high-level wrapper)
+service = create_competition_service(database=db)
+
+# Create a competition
+competition = await service.create_competition(
+    challenge_id="challenge-001",
+    agent_ids=[agent1_id, agent2_id, agent3_id],
+    name="Algorithm Championship"
+)
+
+# Run entire competition with one call
+# (Handles status updates, execution, winner determination)
+results = await service.run_competition(
+    competition_id=competition.id,
+    timeout_per_agent=300
+)
+
+print(f"Competition completed!")
+print(f"Winner: {results.winner}")
+print(f"Duration: {results.total_duration:.2f}s")
+
+# Check status anytime
+status = await service.get_competition_status(competition.id)
+print(f"Status: {status.status.value}")
+
+# Get statistics
+stats = service.get_statistics()
+print(f"Active competitions: {stats['agent_manager_stats']['active_competitions']}")
+```
+
 ## Configuration
 
 ### Environment Variables
@@ -552,6 +655,21 @@ The competition demo showcases:
 2. Single Agent Execution
 3. Competition with Timeout Handling
 4. Manager Statistics & Monitoring
+
+### Competition Service Demo
+
+Test the high-level CompetitionService:
+
+```bash
+cd backend
+python demo/competition_service_demo.py
+```
+
+The service demo showcases:
+1. Full Competition Flow (End-to-End)
+2. Status Checking
+3. Service Statistics
+4. Error Handling
 
 ## Performance Metrics
 
