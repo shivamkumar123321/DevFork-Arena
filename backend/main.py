@@ -3,6 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import os
 
+# Import routers
+from routes import competitions_router
+
 load_dotenv()
 
 app = FastAPI(
@@ -19,6 +22,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+app.include_router(competitions_router)
 
 @app.get("/")
 async def root():
